@@ -247,3 +247,187 @@ int main(int argc, char const *argv[])
 
 //     return 0;
 // }
+
+void interp_naive(int *signal, int *out, int amount)
+{
+    int mod = amount % 2;
+    int n_samples = amount - mod;
+
+    if (amount == 1)
+    {
+        n_samples = 1;
+    }
+
+    memset(out, 0, sizeof(int) * n_samples);
+    if (mod == 1)
+    {
+        for (int i = 1; i < N_SAMPLES - n_samples; i++)
+        {
+            out[n_samples + i - 1] = signal[i - 1] + ((signal[i] - signal[i - 1]) >> 1);
+        }
+        out[N_SAMPLES - 1] = signal[N_SAMPLES - n_samples - 1];
+    }
+    else
+    {
+        memcpy(out + n_samples, signal, sizeof(int) * (N_SAMPLES - n_samples));
+    }
+}
+
+void interp_avx_prefetch(int *signal, int *out, int amount)
+{
+    int mod = amount % 2;
+    int n_samples = amount - mod;
+
+    if (amount == 1)
+    {
+        n_samples = 1;
+    }
+
+    memset(out, 0, sizeof(int) * n_samples);
+
+    if (mod == 1) {
+        __m256i v0 = _mm256_setzero_si256();
+        __m256i v1 = _mm256_setzero_si256();
+
+        __m256i diff = _mm256_setzero_si256();
+
+        int i = 0;
+        for (; i < N_SAMPLES - 8; i+=8)
+        {
+            _mm_prefetch((char *)(signal + i + 9*2), _MM_HINT_T0);
+            v0 = _mm256_loadu_si256((__m256i *)(signal + i));
+            v1 = _mm256_loadu_si256((__m256i *)(signal + i + 1));
+
+            diff = _mm256_sub_epi32(v1, v0);
+            diff = _mm256_srai_epi32(diff, 1);
+            diff = _mm256_add_epi32(v0, diff);
+
+            _mm256_storeu_si256((__m256i *)(out + mod + i), diff);
+        }
+
+        // Last in a naive way
+        for (; i < N_SAMPLES;i++)
+        {
+            out[n_samples + i - 2] = signal[i - 1] + ((signal[i] - signal[i - 1]) >> 1);
+        }
+        out[N_SAMPLES - 1] = signal[N_SAMPLES - n_samples - 1];
+
+    } else {
+        memcpy(out + n_samples, signal, sizeof(int) * (N_SAMPLES - n_samples));
+    }
+}
+
+void interp_avx(int *signal, int *out, int amount)
+{
+    int mod = amount % 2;
+    int n_samples = amount - mod;
+
+    if (amount == 1)
+    {
+        n_samples = 1;
+    }
+
+    memset(out, 0, sizeof(int) * n_samples);
+
+    if (mod == 1)
+    {
+        __m256i v0 = _mm256_setzero_si256();
+        __m256i v1 = _mm256_setzero_si256();
+
+        __m256i diff = _mm256_setzero_si256();
+
+        int i = 0;
+        for (; i < N_SAMPLES - 8; i += 8)
+        {
+            v0 = _mm256_loadu_si256((__m256i *)(signal + i));
+            v1 = _mm256_loadu_si256((__m256i *)(signal + i + 1));
+
+            diff = _mm256_sub_epi32(v1, v0);
+            diff = _mm256_srai_epi32(diff, 1);
+            diff = _mm256_add_epi32(v0, diff);
+
+            _mm256_storeu_si256((__m256i *)(out + mod + i), diff);
+        }
+
+        // Last in a naive way
+        for (; i < N_SAMPLES; i++)
+        {
+            out[n_samples + i - 2] = signal[i - 1] + ((signal[i] - signal[i - 1]) >> 1);
+        }
+        out[N_SAMPLES - 1] = signal[N_SAMPLES - n_samples - 1];
+    }
+    else
+    {
+        memcpy(out + n_samples, signal, sizeof(int) * (N_SAMPLES - n_samples));
+    }
+}
+
+#include <time.h>
+
+
+#define N_TIMES 1000000
+
+int main()
+{
+    __m256i vec = _mm256_set_epi32(16, 8, 0, 8, 16, 32, 64, 1024);
+    __m128i shiftCount = _mm_set1_epi32(4);
+    // __m128i shiftCount = _mm_set_epi32(1, 1, 1, 1);
+
+    // __m128i shiftCount = ( __m128i)1;
+
+    // printf("Before shift:\n");
+    // print256(vec);
+
+    // // __m256i result = _mm256_sra_epi32(vec, shiftCount);
+    // // __m256i result = _mm256_srlv_epi32(vec, shiftCount);
+    // __m256i result = _mm256_srai_epi32(vec, 1);
+
+    
+
+    // // _mm256_storeu_si256()
+    
+
+    // printf("After shift:\n");
+    // print256(result);
+
+    // int signal[9] = {16, 8, 0, 8, 16, 32, 64, 128, 256};
+    int out[N_SAMPLES];
+
+    int signal[N_SAMPLES];
+
+    for (int i = 0; i < N_SAMPLES; i++)
+    {
+        signal[i] = (int)pow((double)(i+1), 1.9);
+    }
+
+    clock_t start, stop;
+    start = clock();
+    for (int i = 0; i < N_TIMES; i++)
+    {
+        interp_avx(&signal[0], &out[0], (i + 1) % 5);
+    }
+    stop = clock();
+
+    double elapsed = (double)(stop - start) / CLOCKS_PER_SEC;
+    printf("Vectorized Time elapsed in ms: %f\n", elapsed);
+
+    start = clock();
+    for (int i = 0; i < N_TIMES; i++)
+    {
+        interp_naive(&signal[0], &out[0], (i+1)%5);
+    }
+    stop = clock();
+
+    elapsed = (double)(stop - start) / CLOCKS_PER_SEC;
+    printf("Naive Time elapsed in ms: %f\n", elapsed);
+
+    interp_naive(&signal[0], &out[0], 1);
+
+    // for (int i = 0; i < N_SAMPLES; i++)
+    // {
+    //     printf("%d %d\n", signal[i], out[i]);
+    // }
+    // printf("\n");
+
+    return 0;
+}
