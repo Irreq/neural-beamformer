@@ -13,8 +13,6 @@
 #define UNROLLED 0
 
 
-ring_buffer *rb;
-
 /*
 Create a ring buffer
 */
@@ -103,7 +101,7 @@ inline void read_mcpy(ring_buffer *rb, float *out)
     int first_partition = BUFFER_LENGTH - rb->index;
 
     float *data_ptr = &rb->data[0];
-    
+
     memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
     memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
 }
