@@ -18,7 +18,7 @@ configure_file(
     ${SETUP_PY}
 )
 
-execute_process(COMMAND echo ${CMAKE_BUILD_DIR})
+execute_process(COMMAND cp -r )
 
 add_custom_target(config ALL DEPENDS
     # Generate C/C++ config.h
@@ -35,10 +35,26 @@ add_custom_command(OUTPUT "${PY_OUTPUT}"
 
 add_custom_target(a_py ALL DEPENDS ${PY_OUTPUT})
 
+# add_library(bf ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
+
+# Link each target with other targets or add options, etc.
+
+# Adding something we can run - Output name matches target name
+add_executable(run 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+)
+
+# Make sure you link your targets with this command. It can also link libraries and
+# even flags, so linking a target that does not exist will not give a configure-time error.
+# target_link_libraries(run PRIVATE bf)
+
+
 add_custom_target(test
     # COMMAND ${PYTHON} -m unittest discover -s ..
     COMMAND ${PYTHON} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)")
+install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)"
+)
 
