@@ -71,6 +71,8 @@ inline void write_buffer(ring_buffer *rb, float *in)
     rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
 }
 
+
+
 #else
 /*
 Write data from an address `in` to a ring buffer you can specify offset
@@ -106,31 +108,25 @@ inline void read_mcpy(ring_buffer *rb, float *out)
     memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
 }
 
-void write_buffer_all(RB *rb, float (*data)[N_SAMPLES])
+void write_buffer_single(ring_buffer *rb, float *data)
 {
     for (int i = 0; i < N_SENSORS; i++)
     {
-        memcpy((void *)&rb->data[i][rb->index], &data[i][0], sizeof(float) * N_SAMPLES);
+        rb->data[i][rb->index] = data[i];
     }
 
-    rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
+
+
+    rb->index = (rb->index + 1) & (BUFFER_LENGTH - 1);
 }
 
-void read_buffer_all(RB *rb, float (*out)[BUFFER_LENGTH])
-{
-    int first_partition = BUFFER_LENGTH - rb->index;
 
-    for (int i = 0; i < N_SENSORS; i++)
-    {
-        memcpy(&out[i][0], (void *)&rb->data[i][rb->index], sizeof(float) * first_partition);
-        memcpy(&out[i][0] + first_partition, (void *)&rb->data[i][0], sizeof(float) * rb->index);
-    }
 
-}
+#if AVX
 
 #include <immintrin.h>
 
-inline void write_buffer_all_avx(RB *rb, float (*data)[N_SAMPLES]) {
+inline void write_buffer_all(ring_buffer *rb, float (*data)[N_SAMPLES]) {
     for (int i = 0; i < N_SENSORS; i++) {
         for (int k = 0; k < N_SAMPLES; k+=8*2)
         {
@@ -143,7 +139,7 @@ inline void write_buffer_all_avx(RB *rb, float (*data)[N_SAMPLES]) {
     rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
 }
 
-void read_buffer_all_avx(RB *rb, float (*out)[BUFFER_LENGTH]) {
+void read_buffer_all(ring_buffer *rb, float (*out)[BUFFER_LENGTH]) {
     int first_partition = BUFFER_LENGTH - rb->index;
 
     for (int i = 0; i < N_SENSORS; i++) {
@@ -161,16 +157,29 @@ void read_buffer_all_avx(RB *rb, float (*out)[BUFFER_LENGTH]) {
         }
     }
 }
-// inline void write_buffer_all_avx(RB *rb, float (*data)[N_SAMPLES]) {
-//     for (int i = 0; i < N_SENSORS; i++) {
-//         for (int k = 0; k < N_SAMPLES; k += 16) {
-//             __m256 source1 = _mm256_loadu_ps(&data[i][k]);
-//             __m256 source2 = _mm256_loadu_ps(&data[i][k + 8]);
 
-//             _mm256_storeu_ps(&rb->data[i][rb->index + k], source1);
-//             _mm256_storeu_ps(&rb->data[i][rb->index + k + 8], source2);
-//         }
-//     }
+#else
 
-//     rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
-// }
+void write_buffer_all(ring_buffer *rb, float (*data)[N_SAMPLES])
+{
+    for (int i = 0; i < N_SENSORS; i++)
+    {
+        memcpy((void *)&rb->data[i][rb->index], &data[i][0], sizeof(float) * N_SAMPLES);
+    }
+
+    rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
+}
+
+void read_buffer_all(ring_buffer *rb, float (*out)[BUFFER_LENGTH])
+{
+    int first_partition = BUFFER_LENGTH - rb->index;
+
+    for (int i = 0; i < N_SENSORS; i++)
+    {
+        memcpy(&out[i][0], (void *)&rb->data[i][rb->index], sizeof(float) * first_partition);
+        memcpy(&out[i][0] + first_partition, (void *)&rb->data[i][0], sizeof(float) * rb->index);
+    }
+
+}
+
+#endif
