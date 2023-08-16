@@ -1,0 +1,28 @@
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Distutils import build_ext
+from Cython.Build import cythonize
+
+module  = Extension(
+    name="delay",
+    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/delay.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c"],
+    include_dirs = ['${CMAKE_CURRENT_SOURCE_DIR}/src'],
+    language="c++",
+    )
+
+
+module.cython_c_in_temp = True 
+
+ext_modules = [
+    module,
+]
+
+setup(
+    name = 'a',
+    version='${PROJECT_VERSION}',
+    cmdclass = {'build_ext': build_ext},
+    ext_modules = cythonize(ext_modules),
+    #ext_modules = cythonize(ext_modules, build_dir="build"),
+    #package_dir={ 'a': '${CMAKE_CURRENT_SOURCE_DIR}' },
+)
+
