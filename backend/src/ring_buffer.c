@@ -105,3 +105,72 @@ inline void read_mcpy(ring_buffer *rb, float *out)
     memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
     memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
 }
+
+void write_buffer_all(RB *rb, float (*data)[N_SAMPLES])
+{
+    for (int i = 0; i < N_SENSORS; i++)
+    {
+        memcpy((void *)&rb->data[i][rb->index], &data[i][0], sizeof(float) * N_SAMPLES);
+    }
+
+    rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
+}
+
+void read_buffer_all(RB *rb, float (*out)[BUFFER_LENGTH])
+{
+    int first_partition = BUFFER_LENGTH - rb->index;
+
+    for (int i = 0; i < N_SENSORS; i++)
+    {
+        memcpy(&out[i][0], (void *)&rb->data[i][rb->index], sizeof(float) * first_partition);
+        memcpy(&out[i][0] + first_partition, (void *)&rb->data[i][0], sizeof(float) * rb->index);
+    }
+
+}
+
+#include <immintrin.h>
+
+inline void write_buffer_all_avx(RB *rb, float (*data)[N_SAMPLES]) {
+    for (int i = 0; i < N_SENSORS; i++) {
+        for (int k = 0; k < N_SAMPLES; k+=8*2)
+        {
+            _mm256_storeu_ps(&rb->data[i][rb->index + k], _mm256_loadu_ps(&data[i][k]));
+            _mm256_storeu_ps(&rb->data[i][rb->index + (k + 8)], _mm256_loadu_ps(&data[i][k+8]));
+        }
+        
+    }
+
+    rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
+}
+
+void read_buffer_all_avx(RB *rb, float (*out)[BUFFER_LENGTH]) {
+    int first_partition = BUFFER_LENGTH - rb->index;
+
+    for (int i = 0; i < N_SENSORS; i++) {
+        int j = 0;
+
+        for (; j < first_partition; j += 8) {
+            __m256 source = _mm256_loadu_ps(&rb->data[i][rb->index + j]);
+            _mm256_storeu_ps(&out[i][j], source);
+        }
+
+        // Copy the elements from the beginning of the buffer
+        for (int k = 0; k < rb->index; k += 8) {
+            __m256 source = _mm256_loadu_ps(&rb->data[i][k]);
+            _mm256_storeu_ps(&out[i][j + k], source);
+        }
+    }
+}
+// inline void write_buffer_all_avx(RB *rb, float (*data)[N_SAMPLES]) {
+//     for (int i = 0; i < N_SENSORS; i++) {
+//         for (int k = 0; k < N_SAMPLES; k += 16) {
+//             __m256 source1 = _mm256_loadu_ps(&data[i][k]);
+//             __m256 source2 = _mm256_loadu_ps(&data[i][k + 8]);
+
+//             _mm256_storeu_ps(&rb->data[i][rb->index + k], source1);
+//             _mm256_storeu_ps(&rb->data[i][rb->index + k + 8], source2);
+//         }
+//     }
+
+//     rb->index = (rb->index + N_SAMPLES) & (BUFFER_LENGTH - 1);
+// }
