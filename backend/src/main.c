@@ -11,7 +11,17 @@
 #include "config.h"
 #include "ring_buffer.h"
 
+#ifndef AVX
+#define AVX 0
+#endif
+
+#if AVX
+#include <immintrin.h>
+#endif
+
 ring_buffer *rb;
+
+RB *rb2;
 
 int shm_fd;
 
@@ -41,7 +51,6 @@ void signal_handler(int signum) {
 }
 
 
-
 void* worker_function(void* arg) {
     float out[BUFFER_LENGTH];
     while (!stop_processing) {
@@ -51,6 +60,8 @@ void* worker_function(void* arg) {
         if (stop_processing) {
             break; // Exit the loop if the flag is set
         }
+
+        read_mcpy(rb, &out[0]);
 
         while (1)
         {
@@ -64,10 +75,7 @@ void* worker_function(void* arg) {
             }
 
             pool->current_task++;
-            // Perform convolution on shared_data
-            // For demonstration purposes, let's just print the first element
-            // printf("Worker %ld processed: %d\n", (long)arg, shared_data[0]);
-            read_mcpy(rb, &out[0]);
+            // read_mcpy(rb, &out[0]);
 
             printf("Worker %ld (%d) processed: ", (long)arg, pool->current_task, out[0]);
 
@@ -85,15 +93,11 @@ void* worker_function(void* arg) {
 
             usleep(10000);
         }
-
-        
-
-        
-
-        
     }
     return NULL;
 }
+
+#if 0
 
 int main() {
     pool = (ThreadPool *)calloc(1, sizeof(ThreadPool));
@@ -191,3 +195,101 @@ int main() {
 
     return 0;
 }
+
+#else
+#include <string.h>
+int main()
+{
+#if AVX
+    printf("Using AVX\n");
+
+    // Align the RB structure's data array to 32 bytes for AVX
+    rb2 = (RB *)_mm_malloc(sizeof(RB), 32);
+    if (!rb2) {
+        // Handle allocation failure
+        return 1;
+    }
+    float arr[N_SENSORS][N_SAMPLES] __attribute__((aligned(32)));
+#else
+    rb2 = (RB *)calloc(1, sizeof(RB));
+    float arr[N_SENSORS][N_SAMPLES];
+#endif
+    float out[N_SENSORS][BUFFER_LENGTH];
+
+    // int i = 0;
+
+    for (int s = 0; s < N; s++)
+    {
+        for (int k = 0; k < N_SENSORS; k++)
+        {
+            for (int i = 0; i < N_SAMPLES; i++)
+            {
+                arr[k][i] = (float)(s * N_SAMPLES + 10 * k + i);
+            }
+        }
+
+        write_buffer_all_avx(rb2, &arr[0]);
+        
+    }
+
+#if 1
+
+    clock_t tic, toc;
+    double duration;
+
+    int n = 100000;
+
+    tic = clock();
+
+   
+
+    for (int i = 0; i < n; i++)
+    {
+
+        // write_buffer_all_avx(rb2, &arr[0]);
+        read_buffer_all_avx(rb2, &out[0]);
+    }
+
+    toc = clock();
+
+    duration = (double)(toc - tic) / CLOCKS_PER_SEC;
+
+    printf("AVX Elapsed: %f seconds\n", duration);
+
+    tic = clock();
+
+    for (int i = 0; i < n; i++)
+    {
+
+        // write_buffer_all(rb2, &arr[0]);
+        read_buffer_all(rb2, &out[0]);
+    }
+
+    toc = clock();
+
+    duration = (double)(toc - tic) / CLOCKS_PER_SEC;
+
+    printf("Naive Elapsed: %f seconds\n", duration);
+#else
+    read_buffer_all_avx(rb2, &out[0]);
+
+    for (int k = 0; k < N_SENSORS; k++)
+    {
+        for (int i = 0; i < BUFFER_LENGTH; i++)
+        {
+            printf("%d ", (int)out[k][i]);
+        }
+
+        printf("\n");
+    }
+#endif
+
+#if AVX
+    // Free the aligned memory when done
+    _mm_free(rb);
+#else
+    free(rb2);
+#endif
+}
+
+#endif
