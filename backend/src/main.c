@@ -11,9 +11,9 @@
 #include "config.h"
 #include "ring_buffer.h"
 
-#ifndef AVX
-#define AVX 0
-#endif
+// #ifndef AVX
+// #define AVX 0
+// #endif
 
 #if AVX
 #include <immintrin.h>
@@ -21,7 +21,7 @@
 
 ring_buffer *rb;
 
-RB *rb2;
+// RB *rb2;
 
 int shm_fd;
 
@@ -29,6 +29,8 @@ pthread_t threads[N_THREADS];
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_barrier_t barrier;
+
+pthread_barrier_t barrier2;
 
 int stop_processing = 0; // Flag to signal threads to stop processing
 
@@ -40,6 +42,7 @@ typedef struct {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     int stop;
+    float data[N_SENSORS][BUFFER_LENGTH];
 } ThreadPool;
 
 ThreadPool *pool;
@@ -50,9 +53,54 @@ void signal_handler(int signum) {
     stop_processing = 1;
 }
 
+void* waiting_thread(void* arg) {
+    while (!stop_processing)
+    {
+        printf("Starting\n");
+        // Wait for new batch of data
+        pthread_barrier_wait(&barrier2);
+
+        if (stop_processing) {
+            break; // Exit the loop if the flag is set
+        }
+
+        printf("reading\n");
+
+        read_buffer_all(rb, &pool->data[0]);
+
+        pthread_barrier_wait(&barrier);
+        if (stop_processing) {
+            break; // Exit the loop if the flag is set
+        }
+
+        pthread_mutex_lock(&mutex);
+        while (pool->current_task < N_KERNELS) {
+            usleep(1);
+            pthread_cond_wait(&pool->cond, &mutex);
+        }
+        pthread_mutex_unlock(&mutex);
+
+        
+    }
+    
+}
+
+void compute(int t_id, int task)
+{
+    printf("Worker %ld (%d) processed: ", t_id, task);
+
+    for (int i = 0; i < BUFFER_LENGTH; i++)
+    {
+        // printf("%f ", pool->data[task][i]);
+        printf("%d ", (int)pool->data[task][i]);
+    }
+
+    printf("\n");
+}
+
 
 void* worker_function(void* arg) {
-    float out[BUFFER_LENGTH];
+    int task;
     while (!stop_processing) {
         // Wait for new batch of data
         pthread_barrier_wait(&barrier);
@@ -61,47 +109,30 @@ void* worker_function(void* arg) {
             break; // Exit the loop if the flag is set
         }
 
-        read_mcpy(rb, &out[0]);
-
         while (1)
         {
-            // Worker threads process shared data (convolution)
             pthread_mutex_lock(&mutex);
-
             if (pool->current_task >= N_KERNELS)
             {
                 pthread_mutex_unlock(&mutex);
                 break;
             }
 
-            pool->current_task++;
-            // read_mcpy(rb, &out[0]);
-
-            printf("Worker %ld (%d) processed: ", (long)arg, pool->current_task, out[0]);
-
-            
-
-            // for (int i = 0; i < BUFFER_LENGTH; i++)
-            // {
-            //     printf("%f ", out[i]);
-            // }
-
-            printf("\n");
-            
+            task = pool->current_task++;
 
             pthread_mutex_unlock(&mutex);
 
-            usleep(10000);
+            compute((int)arg, task);
+
         }
     }
     return NULL;
 }
 
-#if 0
+#if 1
 
 int main() {
     pool = (ThreadPool *)calloc(1, sizeof(ThreadPool));
-    // pool->kernels = malloc(sizeof(float) * N_KERNELS);
     pool->data_size = N_KERNELS;
     pool->current_task = 0;
     pool->stop = 0;
@@ -125,52 +156,62 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    pthread_barrier_init(&barrier, NULL, N_THREADS + 1);
+    pthread_barrier_init(&barrier, NULL, N_THREADS +1);
 
     // Initialize worker threads
-    
     for (long i = 0; i < N_THREADS; ++i) {
         pthread_create(&threads[i], NULL, worker_function, (void*)i);
     }
 
-    float data[N_SAMPLES];
+    // pthread_create(&threads[N_THREADS], NULL, waiting_thread, (void*)0);
+
+    float data[N_SENSORS][N_SAMPLES];
 
     float count = 0;
 
-    for (int i = 0; i < 10; i++)
+    for (int s = 0; s < N_SENSORS; s++)
     {
         // Generate dummy data (for demonstration)
         for (int i = 0; i < N_SAMPLES; ++i) {
-            data[i] = rand() % 100; // Replace with actual data source
-            data[i] = count;
+            data[s][i] = rand() % 100; // Replace with actual data source
+            data[s][i] = (float)(count * N_SAMPLES + s * N_SAMPLES + i);
             count += 1.0;
         }
 
-        write_buffer(rb, &data[0]);
+        write_buffer_all(rb, &data[0]);
     }
     // Main loop for the producer
     while (!stop_processing) {
         // Generate dummy data (for demonstration)
-        for (int i = 0; i < N_SAMPLES; ++i) {
-            // data[i] = rand() % 100; // Replace with actual data source
-            data[i] = count;
-            count += 1.0;
+        for (int s = 0; s < N_SENSORS; s++)
+        {
+            for (int i = 0; i < N_SAMPLES; ++i) {
+                // data[i] = rand() % 100; // Replace with actual data source
+                data[s][i] += 1.0;
+                
+            }
         }
+
+        printf("new main\n");
+        
 
         pthread_mutex_lock(&mutex);
 
-        write_buffer(rb, &data[0]);
+        // write_buffer_all(rb, &data[0]);
+        write_buffer_single(rb, &data[0][0]);
+
+        read_buffer_all(rb, &pool->data[0]);
 
         pool->current_task = 0;
 
-        pthread_mutex_unlock(&mutex);
-
-        
+        pthread_mutex_unlock(&mutex);        
         
         // Signal worker threads to process the data
         pthread_barrier_wait(&barrier);
-        sleep(1); // Simulate processing time (adjust as needed)
+        
+        usleep(100000); // Simulate processing time (adjust as needed)
     }
+    // pthread_barrier_wait(&barrier2);
     pthread_barrier_wait(&barrier);
 
     printf("Cleaning\n");
@@ -182,6 +223,7 @@ int main() {
 
     // printf("Could cancel all threads\n");
     pthread_barrier_destroy(&barrier);
+    // pthread_barrier_destroy(&barrier2);
     // printf("barrier\n");
     munmap(rb, sizeof(ring_buffer));
     // printf("nunmap\n");
@@ -200,6 +242,7 @@ int main() {
 #include <string.h>
 int main()
 {
+
 #if AVX
     printf("Using AVX\n");
 
@@ -214,6 +257,7 @@ int main()
     rb2 = (RB *)calloc(1, sizeof(RB));
     float arr[N_SENSORS][N_SAMPLES];
 #endif
+
     float out[N_SENSORS][BUFFER_LENGTH];
 
     // int i = 0;
@@ -228,7 +272,7 @@ int main()
             }
         }
 
-        write_buffer_all_avx(rb2, &arr[0]);
+        write_buffer_all(rb2, &arr[0]);
         
     }
 
@@ -246,30 +290,16 @@ int main()
     for (int i = 0; i < n; i++)
     {
 
-        // write_buffer_all_avx(rb2, &arr[0]);
-        read_buffer_all_avx(rb2, &out[0]);
+        write_buffer_all(rb2, &arr[0]);
+        // read_buffer_all(rb2, &out[0]);
     }
 
     toc = clock();
 
     duration = (double)(toc - tic) / CLOCKS_PER_SEC;
 
-    printf("AVX Elapsed: %f seconds\n", duration);
+    printf("Elapsed: %f seconds\n", duration);
 
-    tic = clock();
-
-    for (int i = 0; i < n; i++)
-    {
-
-        // write_buffer_all(rb2, &arr[0]);
-        read_buffer_all(rb2, &out[0]);
-    }
-
-    toc = clock();
-
-    duration = (double)(toc - tic) / CLOCKS_PER_SEC;
-
-    printf("Naive Elapsed: %f seconds\n", duration);
 #else
     read_buffer_all_avx(rb2, &out[0]);
 
@@ -284,12 +314,7 @@ int main()
     }
 #endif
 
-#if AVX
-    // Free the aligned memory when done
-    _mm_free(rb);
-#else
     free(rb2);
-#endif
 }
 
 #endif
