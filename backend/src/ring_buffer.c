@@ -98,15 +98,15 @@ inline void write_buffer(ring_buffer *rb, float *in)
 
 #endif
 
-inline void read_mcpy(ring_buffer *rb, float *out)
-{
-    int first_partition = BUFFER_LENGTH - rb->index;
+// inline void read_mcpy(ring_buffer *rb, float *out)
+// {
+//     int first_partition = BUFFER_LENGTH - rb->index;
 
-    float *data_ptr = &rb->data[0];
+//     float *data_ptr = &rb->data[0];
 
-    memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
-    memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
-}
+//     memcpy(out, (void *)(data_ptr + rb->index), sizeof(float) * first_partition);
+//     memcpy(out + first_partition, (void *)(data_ptr), sizeof(float) * rb->index);
+// }
 
 void write_buffer_single(ring_buffer *rb, float *data)
 {
