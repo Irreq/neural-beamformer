@@ -45,6 +45,11 @@ add_executable(run
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
 )
 
+add_executable(delay
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+)
+
 # Make sure you link your targets with this command. It can also link libraries and
 # even flags, so linking a target that does not exist will not give a configure-time error.
 # target_link_libraries(run PRIVATE bf)

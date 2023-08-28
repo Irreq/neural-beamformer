@@ -1,9 +1,8 @@
 {
-    "N": 2,
+    "N": 4,
     "N_SAMPLES": 8,
-    "BUFFER_LENGTH": "{N_SAMPLES * N}",
+    "BUFFER_LENGTH": "N_SAMPLES * N",
     "N_THREADS": 8,
     "N_SENSORS": 4,
-    "N_KERNELS": "{N_SENSORS}"
-
+    "N_KERNELS": "N_SENSORS"
 }
