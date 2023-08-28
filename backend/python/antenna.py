@@ -1,34 +1,85 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# File name: python/antenna.py
+# Description: File for creating/moving/steering/plotting antennas
+# Author: irreq (irreq@protonmail.com)
+# Date: 26/08/2023
+
 import numpy as np
 np.set_printoptions(linewidth=120)
+
 import matplotlib.pyplot as plt
+
 from scipy.spatial.transform import Rotation as R
 
-N_ARRAYS = 2
+
 ROWS = 8
 COLUMNS = 8
 
-DISTANCE = 0.02
+DISTANCE = 0.02  # Distance between sensor elements
 
-SAMPLE_RATE = 48828.0
-PROPAGATION_SPEED = 340.0
+SAMPLE_RATE = 48828.0  # Sampling rate
+PROPAGATION_SPEED = 340.0  # Speed of sound in air
 
-ARRAY_SEPARATION = DISTANCE
+ARRAY_SEPARATION = 0  # Distance between arrays
 
 
-SKIP_N_MICS = 2
+SKIP_N_MICS = 2  # How many mics to skip (use every SKIP_N_MICS)
 
-# X = 10
-# Y = 10
 
-X = COLUMNS*DISTANCE#+ARRAY_SEPARATION
-Y = ROWS*DISTANCE#+ARRAY_SEPARATION
+# N_ARRAYS = 2
+# N_SENSORS = N_ARRAYS * ROWS * COLUMNS
 
-N_SENSORS = N_ARRAYS * ROWS * COLUMNS
 
-def create_antenna(position: np.ndarray[1] = np.zeros(3)):
+
+ORIGO = np.zeros(3)
+
+
+def find_middle(antenna):
+    """Find the middle of an antenna constallation
+
+    This function requires a homogenius antenna structure
+
+    Args:
+        antenna (_type_): The antenna
+
+    Returns:
+        np.ndarray[1]: (X, Y, Z)
+    """
+
+    return np.mean(antenna, axis=0)
+
+
+def place_antenna(antenna, position):
+    """Place antenna with its center of gravity at 'position'
+
+    Args:
+        antenna (_type_): The antenna to be moved
+        position (np.ndarray[1]): (X, Y, Z)
+
+    Returns:
+        moved_antenna: the moved antenna to the new position
+    """
+
+    middle = find_middle(antenna)
+    return antenna - middle + position
+
+
+def create_antenna(position: np.ndarray[1] = ORIGO):
+    """Create an antenna consisting of a collection of 3D coordinates
+
+    Args:
+        position (np.ndarray[1], optional): Position of the array. Defaults to ORIGO.
+
+    Returns:
+        Array: The created antenna
+    """
+
     half = DISTANCE / 2
-    antenna = np.zeros((COLUMNS*ROWS, 3))
+    antenna = np.zeros((COLUMNS * ROWS, 3))
     index = 0
+
     for row in range(ROWS):
         for col in range(COLUMNS):
             
@@ -38,15 +89,18 @@ def create_antenna(position: np.ndarray[1] = np.zeros(3)):
 
             index += 1
 
-    antenna += position
+    return place_antenna(antenna, position)
 
-    return antenna
-
-def steer(antenna, azimuth: float, elevation: float):
-    rotation = R.from_euler("xy", [np.radians(-elevation), np.radians(-azimuth)], degrees=False)
-    return rotation.apply(antenna)
 
 def plot_antenna(antenna, adaptive=[], inline=False, relative=False):
+    """Plot the antenna in 3D space
+
+    Args:
+        antenna (_type_): _description_
+        adaptive (list, optional): _description_. Defaults to [].
+        inline (bool, optional): _description_. Defaults to False.
+        relative (bool, optional): _description_. Defaults to False.
+    """
     # if inline:
     #     %matplotlib inline
     # else:
@@ -59,9 +113,6 @@ def plot_antenna(antenna, adaptive=[], inline=False, relative=False):
     if relative:
         a[:,2] = a[:,2] - a[:,2].min()
         
-
-
-
     active = []
     inactive = []
     for i in range(a.shape[0]):
@@ -78,75 +129,122 @@ def plot_antenna(antenna, adaptive=[], inline=False, relative=False):
 
     plt.show()
 
+
 def compute_delays(antenna):
-    delays = antenna[:,2] * (SAMPLE_RATE/PROPAGATION_SPEED)
+    """Compute the delays as the Z-value of the array
+
+    Args:
+        antenna (_type_): _description_
+
+    Returns:
+        np.ndarray[3]: _description_
+    """
+    delays = antenna[:,2] * (SAMPLE_RATE / PROPAGATION_SPEED)
     delays -= delays.min()
-    delays = delays.reshape((-1, COLUMNS, ROWS))
 
-    return delays
-
-def find_middle(antenna):
-    cp = antenna.copy()
-
-    return np.mean(cp, axis=0)
+    return delays.reshape((-1, COLUMNS, ROWS))
 
 
-def test_steer(antenna, azimuth: float, elevation: float):
-    cp = antenna.copy()
+def steer_center(antenna, azimuth: float, elevation: float):
+    """Steer an antenna by pitch and yaw
 
-    middle = find_middle(cp)
-    cd = cp - middle
+    Args:
+        antenna (_type_): The antenna of 3D points to be steered
+        azimuth (float): Angle X-axis 
+        elevation (float): Angle Y-axis
+
+    Returns:
+        np.ndarray[2]: The steered array
+    """
+
+    middle = find_middle(antenna)
+
     rotation = R.from_euler("xy", [np.radians(-elevation), np.radians(-azimuth)], degrees=False)
-    r = rotation.apply(cd)
-    return r + middle
+    
+    # Rotate around origo
+    rotated = rotation.apply(antenna - middle)
 
-def used_sensors(antenna):
+    # Move back into original position
+    return rotated + middle
+
+
+def used_sensors(antenna, distance: float=DISTANCE):
+    """Calculate index of sensors to be used
+
+    Args:
+        antenna (np.ndarray[2]): The antenna
+        distance (float, optional): The skip distance between microphones. Defaults to DISTANCE.
+
+    Returns:
+        list: indexes to be used
+    """
+    
+
+    assert distance > 0, "Distance must be greater than 0"
+
+    # Normalize antenna such that each position converts to a whole integer
+    normalized_antenna = antenna / distance
+    normalized_antenna = np.subtract(normalized_antenna, np.min(normalized_antenna, axis=0))
+    normalized_antenna = np.round(normalized_antenna, 0)
+
     adaptive = []
 
-    cp = antenna.copy()
+    i = 0
+    for (x, y, z) in normalized_antenna:
 
-    n = cp.shape[0] - 1
-
-    cp = cp / DISTANCE
-
-    cp = np.subtract(cp, np.min(cp, axis=0))
-    cp = np.round(cp, 0)
-
-    pos = 0
-    for (x, y, z) in cp:
-        print(x, y, z)
         if SKIP_N_MICS != 0:
             if x % SKIP_N_MICS == 0 and y % SKIP_N_MICS == 0:
-                adaptive.append(pos)
+                adaptive.append(i)
         else:
-            adaptive.append(pos)
+            adaptive.append(i)
 
-        pos += 1
+        i += 1
 
     return adaptive
 
-def create_combined_array(definition):
+
+def create_combined_array(definition: list[list[int]], position: np.ndarray[1]=ORIGO):
+    """Create a 2D array superstructure of smaller arrays
+
+    Args:
+        definition (list[list[int]]): How the arrays should be positioned
+        position (np.ndarray[1], optional): Where the arrays will be located. Defaults to ORIGO.
+
+    Returns:
+        _type_: The new array
+    """
     antennas = []
+
+    SEPARATION_X = COLUMNS * DISTANCE + ARRAY_SEPARATION / 2
+    SEPARATION_Y = ROWS * DISTANCE + ARRAY_SEPARATION / 2
+
     for i in range(len(definition)):
         for j in range(len(definition[i])):
             if definition[i][j]:
-                antenna = create_antenna(np.array([X*j, Y*i,0]))
+                antenna = create_antenna(np.array([SEPARATION_X * j, SEPARATION_Y * i,0]))
                 antennas.append(antenna)
-    return np.concatenate(antennas)
+    
+    # Create a final big array
+    combined_array = np.concatenate(antennas)
 
-def place_antenna(antenna, position):
-    middle = find_middle(antenna)
-    return antenna.copy() - middle + position
+    return place_antenna(combined_array, position)
+
+
 
 if __name__ == "__main__":
-    # merged = create_combined_array([[1, 1, 1]])
+    merged = create_combined_array([[1, 1, 1]])
 
 
-    merged = create_combined_array([[1]])
+    merged = create_combined_array([[1,0, 1]])
     # merged = create_antenna()
     adaptive = used_sensors(merged)
     final = place_antenna(merged, np.array([0, 0, 0]))
 
-    final = test_steer(final, 20, 20)
+    final = steer_center(final, 45, 45)
 
     plot_antenna(final, adaptive=adaptive, relative=True)
+    # plot_antenna(merged, adaptive=adaptive, relative=True)
+
+    h = compute_delays(final)
+
+    print(h.shape, h, np.max(h))
