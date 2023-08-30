@@ -11,8 +11,6 @@ np.set_printoptions(linewidth=120)
 
 import matplotlib.pyplot as plt
 
-from scipy.spatial.transform import Rotation as R
-
 
 ROWS = 8
 COLUMNS = 8
@@ -144,27 +142,27 @@ def compute_delays(antenna):
 
     return delays.reshape((-1, COLUMNS, ROWS))
 
-# def make_quat(axis, angles):
-#     quat = np.zeros(1, 4)
-#     if axis == b'x':   axis_ind = 0
-#     elif axis == b'y': axis_ind = 1
-#     elif axis == b'z': axis_ind = 2
 
-#     ind = 0
+def compute_rotation_matrix(azimuth: float, elevation: float, degrees=True):
+    if degrees:
+        azimuth = np.radians(azimuth)
+        elevation = np.radians(elevation)
+    rotation_matrix_yaw = np.array([
+        [np.cos(azimuth), 0, np.sin(azimuth)],
+        [0, 1, 0],
+        [-np.sin(azimuth), 0, np.cos(azimuth)]
+    ])
 
-#     quat[ind, 3] = np.cos(angles[ind] / 2)
-#     quat[ind, axis_ind] = np.sin(angles[ind] / 2)
-#     return quat
+    rotation_matrix_pitch = np.array([
+        [1, 0, 0],
+        [0, np.cos(elevation), -np.sin(elevation)],
+        [0, np.sin(elevation), np.cos(elevation)]
+    ])
 
-# def comp(angles):
+    combined_rotation_matrix = rotation_matrix_yaw @ rotation_matrix_pitch
 
-#     seq = "xy"
+    return combined_rotation_matrix.T
 
-#     for idx in range(2):
-#         result = _compose_quat(
-#             result,
-#             _make_elementary_quat(seq[idx], angles[:, idx]))
-#     return result
 
 
 def steer_center(antenna, azimuth: float, elevation: float):
@@ -183,18 +181,10 @@ def steer_center(antenna, azimuth: float, elevation: float):
 
     middle = find_middle(antenna)
 
-    rotation = R.from_euler("xy", [np.radians(-elevation), np.radians(-azimuth)], degrees=False)
-    # print(rotation.as_matrix())
+    rotated = (antenna - middle) #@ compute_rotation_matrix(np.radians(-azimuth), np.radians(-elevation), degrees=False)
 
-    # # result = np.einsum('ikj,ik->ij', matrix, vectors)
-    # # Rotate around origo
-    # rotated = rotation.apply(antenna - middle)
-
-    matrix = rotation.as_matrix()
-    matrix = matrix[None, :, :]
-
-    rotated = np.einsum('ijk,ik->ij', matrix, antenna - middle)
-
+    rotated @= compute_rotation_matrix(np.radians(-azimuth), np.radians(-elevation), degrees=False)
+    
     # Move back into original position
     return rotated + middle
 
@@ -261,21 +251,21 @@ def create_combined_array(definition: list[list[int]], position: np.ndarray[1]=O
     return place_antenna(combined_array, position)
 
 
-
 if __name__ == "__main__":
-    # merged = create_combined_array([[1, 1, 1]])
-
 
     merged = create_combined_array([[1,1, 1]])
     # merged = create_antenna()
     adaptive = used_sensors(merged)
     final = place_antenna(merged, np.array([0, 0, 0]))
 
-    final = steer_center(final, 20, 10)
+    final = steer_center(final, 89, 45)
+
+    h = compute_delays(final)
+
+    print(h.shape, np.max(h))
+    print(np.round(h, 2), "Delays")
 
     plot_antenna(final, adaptive=adaptive, relative=True)
     # plot_antenna(merged, adaptive=adaptive, relative=True)
 
-    h = compute_delays(final)
-
-    # print(h.shape, h, np.max(h))
+    
