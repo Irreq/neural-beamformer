@@ -2,11 +2,22 @@
 #include <Eigen/Dense>
 #include <math.h>
 
+#include <vector>
+
+#include "config.h"
+
 #define PROPAGATION_SPEED 340.f
 #define SAMPLE_RATE 48828.f
+#define DISTANCE 0.02
+
+#define SKIP_N_MICS 2
 
 using namespace Eigen;
+using namespace std;
 
+/**
+ * Simple way to convert degree to radians
+ */
 inline float to_radians(float degree)
 {
     return degree * M_PI / 180.0;
@@ -21,6 +32,8 @@ VectorXf compute_delays(const MatrixXf& antenna)
     std::cout << "delays  " << delays << std::endl;
     return delays;
 }
+
+
 
 inline Matrix3f compute_rotation_matrix(const float azimuth, const float elevation)
 {
@@ -55,7 +68,7 @@ MatrixXf create_antenna(const Vector3f& position,
                         const float distance)
 {
     float half = distance / 2;
-    MatrixXf antenna(rows * columns, 3);
+    MatrixXf antenna(rows * columns, 3); // (id, X|Y|Z)
 
     int index = 0;
     for (int y = 0; y < rows; y++) {
@@ -74,7 +87,71 @@ MatrixXf create_antenna(const Vector3f& position,
     return antenna;
 }
 
-int main() {
+
+
+vector<int> used_sensors(const MatrixXf& antenna, float distance=DISTANCE)
+{
+    vector<int> used;
+
+    MatrixXf normalized = antenna / distance;
+    normalized.rowwise() -= normalized.colwise().minCoeff();
+    normalized = normalized.array().round().matrix();
+
+    int x, y;
+    for (int i = 0; i < normalized.rows(); i++) {
+        x = normalized(i, 0);
+        y = normalized(i, 1);
+
+        // Only add if its every SKIP_N_MICS or each one if else 
+        if ((((x % SKIP_N_MICS) == 0) && ((y % SKIP_N_MICS) == 0)) || (SKIP_N_MICS <= 0))
+        {
+            used.push_back(i);
+        }
+    }
+
+    return used; 
+}
+
+MatrixXf steer(const MatrixXf& antenna, float azimuth, float elevation)
+{
+    MatrixXf steered = antenna;
+
+    steered *= compute_rotation_matrix(to_radians(azimuth), to_radians(elevation)).transpose();
+
+    return steered;
+}
+
+int main (int argc, char *argv[]) {
+    MatrixXf antenna = create_antenna(Vector3f(0,0,4), 4, 4, DISTANCE);
+
+        
+    std::cout << "antenna" << antenna << std::endl;
+
+     Matrix3f combined_rotation_matrix = compute_rotation_matrix(to_radians(45.0), to_radians(0.0));
+
+     //antenna = antenna * combined_rotation_matrix.transpose();
+     
+     MatrixXf steered = steer(antenna, 45.0, 0.f);
+
+     std::cout << "antenna" << antenna << std::endl;
+
+     std::cout << "steered" << steered << std::endl;
+
+    vector<int> used = used_sensors(antenna);
+
+    std::cout << "used" << std::endl;
+
+    for(int id : used) {
+        cout << id << "\n";
+        
+    }
+
+    cout << endl;
+
+    return 0;
+}
+
+int _main() {
     Eigen::MatrixXf matrix1(3, 3);
     Eigen::MatrixXf matrix2(2, 3);
     
@@ -136,5 +213,7 @@ int main() {
     // Subtract the vector from each column of the matrix element-wise
     // Eigen::MatrixXf res = matrix2.array() - replicated_vector.array();
     // std::cout << "resu" << res << std::endl;
+    //
+    std::cout << "message" << std::endl;
     return 0;
 }
