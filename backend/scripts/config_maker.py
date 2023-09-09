@@ -151,12 +151,21 @@ if __name__ == '__main__':
     with open(config_json, 'r') as json_file:
         json_data = json.load(json_file)
 
-
-    c = C(config_h)
+    print(f"Generating configuration files from {config_json}") 
+    path = config_h
+    c = C(path)
     c.write(json_data)
+    print(f"generated: {path}")
 
-    # py = Python(config_h+".py")
-    # py.write(json_data)
+    
+    path = config_h+".py"
+    py = Python(path)
+    py.write(json_data)
+    print(f"generated: {path}")
 
-    cy = Cython(config_h+".pxd")
+
+    path = config_h+".pxd"
+    cy = Cython(path)
     cy.write(json_data)
+    print(f"generated: {path}")
+
