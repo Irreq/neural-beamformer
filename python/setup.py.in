@@ -20,11 +20,17 @@ pipeline  = Extension(
     language="c",
     )
 
-
+antenna  = Extension(
+    name="antenna",
+    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/antenna.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.cpp"],
+    include_dirs = ['${CMAKE_CURRENT_SOURCE_DIR}/src']+[numpy.get_include()]+["/usr/include/eigen3"],
+    language="c++",
+    )
 
 ext_modules = [
     pipeline,
     delay
+    #antenna
 ]
 
 setup(
