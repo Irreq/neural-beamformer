@@ -13,25 +13,32 @@ set(PY_OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/pytimestamp")
 
 project(First VERSION 0.0.1)
 
+# For matrix/vector
+find_package(Eigen3 REQUIRED)
+
 configure_file(
     ${SETUP_PY_IN}
     ${SETUP_PY}
 )
 
-execute_process(COMMAND cp -r )
+#execute_process(COMMAND cp -r )
 
 add_custom_target(config ALL DEPENDS
     # Generate C/C++ config.h
-    COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config_maker.py ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h
+    COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config_maker.py ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_SOURCE_DIR}/src --c
     
     # Generate Cython config.h
-    COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config_maker.py ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_SOURCE_DIR}/python/module/config.h
+    COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config_maker.py ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_SOURCE_DIR}/python/module --cython
+    
+    # Python 
+    COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config_maker.py ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_BINARY_DIR} --python
                )
 
 add_custom_command(OUTPUT "${PY_OUTPUT}"
                    COMMAND ${PYTHON} ${SETUP_PY} build_ext --build-lib=lib --build-temp=build
                    COMMAND ${CMAKE_COMMAND} -E touch ${PY_OUTPUT}
                )
+#execte_process(COMMAND cp )
 
 add_custom_target(a_py ALL DEPENDS ${PY_OUTPUT})
 
@@ -40,10 +47,23 @@ add_custom_target(a_py ALL DEPENDS ${PY_OUTPUT})
 # Link each target with other targets or add options, etc.
 
 # Adding something we can run - Output name matches target name
-add_executable(run 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+add_executable(antenna 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.cpp 
+    #${CMAKE_CURRENT_SOURCE_DIR}/src/.c
 )
+
+
+target_link_libraries(antenna
+    Eigen3::Eigen
+)
+
+
+
+# Adding something we can run - Output name matches target name
+# add_executable(run 
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c 
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+# )
 
 add_executable(delay
     ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c 
@@ -57,7 +77,7 @@ add_executable(delay
 
 add_custom_target(test
     # COMMAND ${PYTHON} -m unittest discover -s ..
-    COMMAND ${PYTHON} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND ${PYTHON} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR} -vv
 )
 
 install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)"
