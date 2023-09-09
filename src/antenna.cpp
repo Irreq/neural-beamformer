@@ -15,6 +15,10 @@
 using namespace Eigen;
 using namespace std;
 
+void matrixMultiplication(const Eigen::MatrixXf& A, const Eigen::MatrixXf& B, Eigen::MatrixXf& result) {
+    result = A * B;
+}
+
 /**
  * Simple way to convert degree to radians
  */
@@ -166,43 +170,43 @@ MatrixXf compute_delays_lookup(const MatrixXf& antenna,
 
 }
 
-int main (int argc, char *argv[]) {
-    MatrixXf antenna = create_antenna(Vector3f(0,0,0), 8, 8, DISTANCE);
+// int main (int argc, char *argv[]) {
+//     MatrixXf antenna = create_antenna(Vector3f(0,0,0), 8, 8, DISTANCE);
 
         
-    std::cout << "antenna" << antenna << std::endl;
+//     std::cout << "antenna" << antenna << std::endl;
 
-     Matrix3f combined_rotation_matrix = compute_rotation_matrix(to_radians(45.0), to_radians(0.0));
+//      Matrix3f combined_rotation_matrix = compute_rotation_matrix(to_radians(45.0), to_radians(0.0));
 
-     //antenna = antenna * combined_rotation_matrix.transpose();
+//      //antenna = antenna * combined_rotation_matrix.transpose();
      
-     MatrixXf steered = steer(antenna, 45.0, 0.f);
+//      MatrixXf steered = steer(antenna, 45.0, 0.f);
 
-     std::cout << "antenna" << antenna << std::endl;
+//      std::cout << "antenna" << antenna << std::endl;
 
-     std::cout << "steered" << steered << std::endl;
+//      std::cout << "steered" << steered << std::endl;
 
-    vector<int> used = used_sensors(antenna);
+//     vector<int> used = used_sensors(antenna);
 
-    std::cout << "used" << std::endl;
+//     std::cout << "used" << std::endl;
 
-    for(int id : used) {
-        cout << id << "\n";
+//     for(int id : used) {
+//         cout << id << "\n";
         
-    }
+//     }
 
-    cout << endl;
+//     cout << endl;
 
 
-    int azimuth_resolution = 51;
-    int elevation_resolution = 51;
-    float AZIMUTH_MAX_ANGLE = 80.0;
-    float ELEVATION_MAX_ANGLE = 80.0;
-    MatrixXf delays = compute_delays_lookup(antenna, azimuth_resolution, elevation_resolution, AZIMUTH_MAX_ANGLE, ELEVATION_MAX_ANGLE);
-    std::cout << delays << std::endl;
+//     int azimuth_resolution = 51;
+//     int elevation_resolution = 51;
+//     float AZIMUTH_MAX_ANGLE = 80.0;
+//     float ELEVATION_MAX_ANGLE = 80.0;
+//     MatrixXf delays = compute_delays_lookup(antenna, azimuth_resolution, elevation_resolution, AZIMUTH_MAX_ANGLE, ELEVATION_MAX_ANGLE);
+//     std::cout << delays << std::endl;
 
-    return 0;
-}
+//     return 0;
+// }
 
 // int _main() {
 //     Eigen::MatrixXf matrix1(3, 3);
