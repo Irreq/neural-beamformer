@@ -121,7 +121,7 @@ void write_buffer_single(ring_buffer *rb, float *data)
 }
 
 
-
+#define AVX 0
 #if AVX
 
 #include <immintrin.h>

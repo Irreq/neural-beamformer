@@ -1,7 +1,7 @@
 # cython: language_level=3
 # distutils: language=c
 
-include "config_h.pxd"
+include "config.pxd"
 
 cdef extern from "ring_buffer.h":
     ctypedef struct ring_buffer:

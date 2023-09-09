@@ -3,3 +3,4 @@
 
 cdef extern from "delay.h":
     int test_delay()
+    void delay()

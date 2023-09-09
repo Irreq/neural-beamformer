@@ -5,3 +5,7 @@ cimport delay
 
 def test():
     test_delay()
+
+
+def get_version():
+    return "0"

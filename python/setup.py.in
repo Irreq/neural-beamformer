@@ -3,18 +3,28 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 from Cython.Build import cythonize
 
-module  = Extension(
+import numpy
+
+delay  = Extension(
     name="delay",
-    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/delay.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c"],
+    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/delay.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c", "${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c"],
     include_dirs = ['${CMAKE_CURRENT_SOURCE_DIR}/src'],
     language="c++",
     )
+delay.cython_c_in_temp = True 
+
+pipeline  = Extension(
+    name="pipeline",
+    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/pipeline.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c"],
+    include_dirs = ['${CMAKE_CURRENT_SOURCE_DIR}/src']+[numpy.get_include()],
+    language="c",
+    )
 
 
-module.cython_c_in_temp = True 
 
 ext_modules = [
-    module,
+    pipeline,
+    delay
 ]
 
 setup(

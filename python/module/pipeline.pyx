@@ -13,7 +13,7 @@ cimport numpy as np
 import cython
 cimport cython
 
-include "config.h.pxd"
+include "config.pxd"
 
 # It's necessary to call "import_array" if you use any part of the numpy PyArray_* API.
 np.import_array()
@@ -41,6 +41,12 @@ cdef class _PipeLine:
     def store(self, np.ndarray[np.float32_t, ndim=1, mode="c"] arr):
         """Store a vector to the ringbuffer"""
         write_buffer_single(self.rb, <float (*)> arr.data)
+    
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def store_all(self, np.ndarray[np.float32_t, ndim=2, mode="c"] arr) -> None:
+        """Store multiple vectors into a ringbuffer""" 
+        write_buffer_all(self.rb, <float (*)[N_SAMPLES]> arr.data)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

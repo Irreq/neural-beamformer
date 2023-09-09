@@ -140,32 +140,34 @@ class Cython(ConfigBuilder):
         return ""
 
 
-if  len(sys.argv[1:]) != 2:
-    print(USAGE)
-    sys.exit(1)
-
-config_json, config_h = sys.argv[1:]
-
-
 if __name__ == '__main__':
-    with open(config_json, 'r') as json_file:
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate configuration files")
+
+    parser.add_argument("in_file", help="target config file")
+    parser.add_argument("out", help="output directory")
+
+    parser.add_argument("--python", action="store_true", help="generate python config file")
+    parser.add_argument("--cython", action="store_true", help="generate cython config file")
+    parser.add_argument("--c", action="store_true", help="generate c config file")
+
+    # Parse the command line arguments
+    args = parser.parse_args()
+
+    print(args.in_file)
+
+    with open(args.in_file, "r") as json_file:
         json_data = json.load(json_file)
 
-    print(f"Generating configuration files from {config_json}") 
-    path = config_h
-    c = C(path)
-    c.write(json_data)
-    print(f"generated: {path}")
+    languages = {
+            "python": (Python, "/config.py"),
+            "cython": (Cython, "/config.pxd"),
+            "c": (C, "/config.h")
+            }
 
-    
-    path = config_h+".py"
-    py = Python(path)
-    py.write(json_data)
-    print(f"generated: {path}")
+    for (language, (writer, path)) in languages.items():
+        if getattr(args, language, False):
+            print(f"Generating {language} configuration at: {args.out}{path}")
+            writer(args.out+path).write(json_data)
 
-
-    path = config_h+".pxd"
-    cy = Cython(path)
-    cy.write(json_data)
-    print(f"generated: {path}")
 

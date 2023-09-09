@@ -1,29 +1,12 @@
-#define AVX
+#ifndef DELAY_H
+#define DELAY_H
 
-#if defined AVX
-#include <immintrin.h>
+#include "ring_buffer.h"
+
+int test_delay();
+/**Requires the signal to be longer than N_SAMPLES and that it starts at BUFFER_LENGTH - N_SAMPLES - 1*/
+void lerp_delay(float *signal, float *out, float delay);
+
+int delay(ring_buffer *rb, float *out, float delay, int sensor_id);
+
 #endif
-
-void delay_naive(float *signal, float *h, float *out);
-
-void py_wrapper(double azimuth,
-                double elevation,
-                int columns,
-                int rows,
-                float distance,
-                float fs,
-                float propagation_speed,
-                float *coefficients);
-
-#ifdef AVX
-void delay_vectorized(float *signal, float *h, float *out);
-#endif
-
-void directional_antenna_delay_coefficients(double azimuth,
-                                            double elevation,
-                                            int columns,
-                                            int rows,
-                                            float distance,
-                                            float fs,
-                                            float propagation_speed,
-                                            float **coefficients);

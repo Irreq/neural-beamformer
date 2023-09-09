@@ -1,3 +1,23 @@
+# Cython specific generated stuff inside src :(
+python/module/*.c
+python/module/*.h
+python/module/*.cpp
+python/module/*.hpp
+
+config.h
+config.pxd
+config.py
+
+build/*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.so
+*.o
+
 # Prerequisites
 *.d
 
