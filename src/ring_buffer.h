@@ -1,6 +1,11 @@
 #ifndef RING_BUFFER_H
 #define RING_BUFFER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include "config.h"
 // typedef struct _ring_buffer
 // {
@@ -36,5 +41,9 @@ void read_mcpy(ring_buffer *rb, float *out);
 void write_buffer_all(ring_buffer *rb, float (*data)[N_SAMPLES]);
 
 void read_buffer_all(ring_buffer *rb, float (*out)[BUFFER_LENGTH]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

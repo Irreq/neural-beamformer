@@ -46,17 +46,25 @@ add_custom_target(a_py ALL DEPENDS ${PY_OUTPUT})
 
 # Link each target with other targets or add options, etc.
 
-# Adding something we can run - Output name matches target name
-add_executable(antenna 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.cpp 
-    #${CMAKE_CURRENT_SOURCE_DIR}/src/.c
+# # Adding something we can run - Output name matches target name
+# add_executable(antenna 
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.cpp 
+#     #${CMAKE_CURRENT_SOURCE_DIR}/src/.c
+# )
+# target_link_libraries(antenna
+#     Eigen3::Eigen
+# )
+
+add_executable(beamformer
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/beamformer.cpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/src/beamformer.cpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
 )
 
-
-target_link_libraries(antenna
+target_link_libraries(beamformer
     Eigen3::Eigen
 )
-
 
 
 # Adding something we can run - Output name matches target name
@@ -65,10 +73,10 @@ target_link_libraries(antenna
 #     ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
 # )
 
-add_executable(delay
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
-)
+# add_executable(delay
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c 
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+# )
 
 # Make sure you link your targets with this command. It can also link libraries and
 # even flags, so linking a target that does not exist will not give a configure-time error.
