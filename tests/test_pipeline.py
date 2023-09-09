@@ -5,7 +5,8 @@ from build import config
 
 import numpy as np
 
-class Pipeline(unittest.TestCase): 
+class Pipeline(unittest.TestCase):
+    """Tests that pipeline works as expected when inserting and reading items"""
 
     def test_creation(self):
         """Tests that an actual pipeline is being created"""
