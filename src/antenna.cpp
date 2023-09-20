@@ -6,14 +6,9 @@
 
 #include "config.h"
 
-#define PROPAGATION_SPEED 340.f
-#define SAMPLE_RATE 48828.f
-#define DISTANCE 0.02
-
-#define SKIP_N_MICS 2
-
 using namespace Eigen;
 using namespace std;
+using std::vector;
 
 void matrixMultiplication(const MatrixXf& A, const MatrixXf& B, MatrixXf& result) {
     result = A * B;
@@ -132,12 +127,13 @@ vector<int> used_sensors(const MatrixXf& antenna, const float distance=DISTANCE)
 
 /**
  * Steer the antenna by creating a steered copy since this operation is irreversibly due to noise
+ * TODO fix negative signs for angles in order to steer array correctly
  */
 MatrixXf steer(const MatrixXf& antenna, const float azimuth, const float elevation)
 {
     MatrixXf steered = antenna;
 
-    steered *= compute_rotation_matrix(to_radians(azimuth), to_radians(elevation)).transpose();
+    steered *= compute_rotation_matrix(to_radians(-azimuth), to_radians(-elevation)).transpose();
 
     return steered;
 }

@@ -1,4 +1,11 @@
+#ifndef ANTENNA_H
+#define ANTENNA_H
+
 #include <Eigen/Dense>
+#include <vector>
+#include "config.h"
+
+using std::vector;
 using namespace Eigen;
 void matrixMultiplication(const MatrixXf& A, const MatrixXf& B, MatrixXf& result);
 
@@ -50,3 +57,5 @@ MatrixXf compute_delays_lookup(const MatrixXf& antenna,
                                const int elevation_resolution,
                                const float azimuth_max_angle,
                                const float elevation_max_angle);
+
+#endif
