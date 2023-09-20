@@ -15,7 +15,7 @@
 using namespace Eigen;
 using namespace std;
 
-void matrixMultiplication(const Eigen::MatrixXf& A, const Eigen::MatrixXf& B, Eigen::MatrixXf& result) {
+void matrixMultiplication(const MatrixXf& A, const MatrixXf& B, MatrixXf& result) {
     result = A * B;
 }
 
@@ -169,6 +169,13 @@ MatrixXf compute_delays_lookup(const MatrixXf& antenna,
     return delays;
 
 }
+
+// class Array {
+//     public:
+//         vector get_data() {
+//             return 
+//         }
+// }
 
 // int main (int argc, char *argv[]) {
 //     MatrixXf antenna = create_antenna(Vector3f(0,0,0), 8, 8, DISTANCE);
