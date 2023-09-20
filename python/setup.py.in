@@ -29,8 +29,8 @@ antenna  = Extension(
 
 ext_modules = [
     pipeline,
-    delay
-    #antenna
+    delay,
+    antenna
 ]
 
 setup(

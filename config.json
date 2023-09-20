@@ -4,5 +4,12 @@
     "BUFFER_LENGTH": "N_SAMPLES * N",
     "N_THREADS": 8,
     "N_SENSORS": 4,
-    "N_KERNELS": "N_SENSORS"
+    "N_KERNELS": "N_SENSORS",
+
+    "PROPAGATION_SPEED": 340.0,
+    "SAMPLE_RATE": 48828.0,
+    "DISTANCE": 0.02,
+    "SKIP_N_MICS": 1,
+    "COLUMNS": 8,
+    "ROWS": 8
 }
