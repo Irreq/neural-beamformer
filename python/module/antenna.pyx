@@ -1,42 +1,69 @@
-# distutils: language = c++
-# distutils: sources = matrix_mult.cpp
+# cython: language_level=3
+# distutils: language=c++
+"""# distutils: sources = matrix_mult.cpp"""
 
-# distutils: language = c++
-# distutils: sources = matrix_mult.cpp
 
 import numpy as np
 cimport numpy as np
-cimport eigen as Eigen
 
-cdef extern from "antenna.h":
-    void matrixMultiplication(Eigen.MatrixXf& A, Eigen.MatrixXf& B, Eigen.MatrixXf& result)
 
-def multiply_matrices(np.ndarray[np.float64_t, ndim=2] A, np.ndarray[np.float64_t, ndim=2] B):
-    cdef Eigen.MatrixXf eigen_A = Eigen.MatrixXfMap(&A[0, 0], A.shape[0], A.shape[1])
-    cdef Eigen.MatrixXf eigen_B = Eigen.MatrixXfMap(&B[0, 0], B.shape[0], B.shape[1])
-    cdef Eigen.MatrixXf result
+include "config.pxd"
+include "antenna.pxd"
 
-    matrixMultiplication(eigen_A, eigen_B, result)
+cdef ok():
+    cdef Vector3f pos = Vector3f(0.0, 0.0, 0.0)
 
-    return np.array(result)
+    cdef MatrixXf antenna = create_antenna(pos, COLUMNS, ROWS, DISTANCE)
 
-# import numpy as np
-# cimport numpy as np
+    cdef MatrixXf steered = steer(antenna, 10.0, 5.0)
 
-# # It's necessary to call "import_array" if you use any part of the numpy PyArray_* API.
-# np.import_array()
 
-# cdef extern from "antenna.h":
-#     void matrixMultiplication(float[:, ::1] A, float[:, ::1] B, float[:, ::1] result)
 
-# def multiply_matrices(A, B):
-#     cdef int m = A.shape[0]
-#     cdef int n = A.shape[1]
-#     cdef int p = B.shape[1]
+    # me = antenna
+    # result = np.zeros((me.rows(),me.cols())) # create nd array
+    # print(result.shape)
+    # # Fill out the nd array with MatrixXf elements 
+    # for row in range(me.rows()): 
+    #     for col in range(me.cols()): 
+    #         result[row, col] = me.coeff(row, col)
 
-#     cdef float[:, ::1] A_view = A
-#     cdef float[:, ::1] B_view = B
-#     cdef float[:, ::1] result = np.zeros((m, p), dtype=float)
+    cdef VectorXf delays = compute_delays(steered)
 
-#     matrixMultiplication(A_view, B_view, result)
-#     return result
+    result = np.zeros((COLUMNS, ROWS), dtype=np.float32)
+
+    i = 0
+    for y in range(ROWS):
+        for x in range(COLUMNS):
+            result[y, x] = delays.coeff(i)
+            i += 1
+
+
+
+    return result
+
+# Antenna creation
+
+cdef np.ndarray cp_create_antenna(np.ndarray position):
+    cdef Vector3f pos = Vector3f(position[0], position[1], position[2])
+    cdef MatrixXf antenna = create_antenna(pos, COLUMNS, ROWS, DISTANCE)
+
+    result = np.zeros((antenna.rows(), antenna.cols()), dtype=np.float32)
+
+    for row in range(antenna.rows()):
+        for col in range(antenna.cols()):
+            result[row, col] = antenna.coeff(row, col)
+
+    return result
+
+def _create_antenna(position):
+    """Wrapper for cp_create_antenna"""
+    return cp_create_antenna(position)
+
+
+def test():
+    # cdef Eigen.MatrixXf a 
+    # print(arr())
+    antenna = ok()
+    # print(antenna)
+    print("Tested Eigen array")
+    return antenna
