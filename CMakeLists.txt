@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.10.1)
 project(test)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 IF(NOT PYTHON)
     find_program(PYTHON "python")
 ENDIF()
@@ -40,7 +48,7 @@ add_custom_command(OUTPUT "${PY_OUTPUT}"
                )
 #execte_process(COMMAND cp )
 
-add_custom_target(a_py ALL DEPENDS ${PY_OUTPUT})
+add_custom_target(cython_binds ALL DEPENDS ${PY_OUTPUT})
 
 # add_library(bf ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 
@@ -51,7 +59,7 @@ add_custom_target(a_py ALL DEPENDS ${PY_OUTPUT})
 #     ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.cpp 
 #     #${CMAKE_CURRENT_SOURCE_DIR}/src/.c
 # )
-# target_link_libraries(antenna
+# target_link_libraries(antennaa_py
 #     Eigen3::Eigen
 # )
 
