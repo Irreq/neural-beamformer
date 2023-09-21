@@ -4,6 +4,7 @@
 
 #include "delay.h"
 #include "ring_buffer.h"
+#include "config.h"
 
 
 int test_delay()
@@ -24,18 +25,62 @@ void lerp_delay(float *signal, float *out, float delay)
 
     printf("%f = %d, %f\n", delay, offset, fraction);
 
-    for (int i = 0; i < N_SAMPLES; i++)
-    {
-        out[i] += signal[i - offset - 1] + fraction * (signal[i - offset - 1] - signal[i - offset]);
-    }
-
-    // for (int i = 0; i < N_SAMPLES - offset - 1; i++)
+    // for (int i = 0; i < N_SAMPLES; i++)
     // {
-    //     out[offset + i + 1] += signal[i] + h * (signal[i + 1] - signal[i]); // Must precalc h = 1 - h
+    //     out[i] += signal[i - offset - 1] + fraction * (signal[i - offset - 1] - signal[i - offset]);
     // }
+
+    // out[0] += signal[0];
+
+    for (int i = 0; i < N_SAMPLES - offset - 1; i++)
+    {
+        out[offset + i] += signal[i] + fraction * (signal[i] - signal[i + 1]); // Must precalc h = 1 - h
+    }
 }
 
+
+
 #define SAFETY_CHECK 1
+
+int naive_delay(ring_buffer *rb, float *out, float delay, int sensor_id)
+{
+    double _offset;
+    float fraction;
+
+    fraction = (float)modf((double)delay, &_offset);
+
+    int offset = (int)_offset;
+
+#if SAFETY_CHECK
+    if ((offset >= BUFFER_LENGTH - N_SAMPLES) || (offset < 0))
+    {
+        printf("Out of bounds delay, increase buffer size\n");
+        exit(1);
+    }
+#endif
+
+    int prev, current, start;
+
+    float *signal = &rb->data[sensor_id][0];
+
+
+    // Start index begins from the start of the latest N_SAMPLES - offset and forwards
+    start = rb->index + BUFFER_LENGTH - N_SAMPLES - offset;
+
+
+    for (int i = 0; i < N_SAMPLES; i++)
+    {
+        current = start + i;
+        prev = current - 1;
+
+        current &= (BUFFER_LENGTH - 1);
+        prev &= (BUFFER_LENGTH - 1);
+
+        // printf("(%d %d) Prev: %f Current: %f \n", prev, current, signal[prev], signal[current]);
+
+        out[i] += signal[current] + fraction * (signal[prev] - signal[current]);
+    }
+}
 
 inline int delay(ring_buffer *rb, float *out, float delay, int sensor_id)
 {
@@ -76,6 +121,7 @@ inline int delay(ring_buffer *rb, float *out, float delay, int sensor_id)
 
         out[i] += signal[current] + fraction * (signal[current] - signal[next]);
     }
+
 }
 
 
