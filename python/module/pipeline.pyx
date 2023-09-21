@@ -57,6 +57,23 @@ cdef class _PipeLine:
         read_buffer_all(self.rb, <float (*)[BUFFER_LENGTH]> self.frame.data)
         return self.frame
 
+    def get_last_frame(self):
+        """Retrieve the last frame as an array"""
+        return self.latest()[:, -N_SAMPLES:]
+
+    def delay_last_frame(self, np.ndarray delay_vector) -> np.ndarray:
+        """Delay the latest samples for a specific amount"""
+        out = np.zeros((N_SENSORS, N_SAMPLES), dtype=np.float32)
+        cdef np.ndarray[np.float32_t, ndim=2, mode = 'c'] res = np.ascontiguousarray(out)
+
+        for i in range(N_SENSORS):
+            error = pipeline.naive_delay(self.rb, &res[i, 0], delay_vector[i], i)
+
+            if error:
+                raise RuntimeError("Unable to delay, see stacktrace")
+
+        return out
+
 class Pipeline(_PipeLine):
     def __init__(self):
         super().__init__()

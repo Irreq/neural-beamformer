@@ -22,3 +22,7 @@ cdef extern from "ring_buffer.h":
 
     void read_buffer_all(ring_buffer *rb, float (*out)[BUFFER_LENGTH])
     
+
+cdef extern from "delay.h":
+    int naive_delay(ring_buffer *rb, float *out, float delay, int sensor_id)
+    void lerp_delay(float *signal, float *out, float delay)
