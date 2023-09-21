@@ -76,6 +76,48 @@ class Pipeline(unittest.TestCase):
 
         self.assertTrue(np.array_equal(pipe.latest(), truth))
 
+    def test_circular_all_delay(self):
+        """Tests that circular delay works as expected with multiple frames and wrap-around
+        
+        NOTICE this tests that if we have linear incrementation can be delayed properly
+        anything else is difficult to measure, and must be assumed to work
+        based on the result of this test.
+
+        For example, a sine wave can easely be measured with delay, its only the phase. 
+        But this does not work for noise.
+
+        """
+  
+        pipe = pipeline.Pipeline()
+
+        frames = np.zeros((config.N_SENSORS, config.N_SAMPLES), dtype=np.float32)
+
+        # Fill the pipeline with dummy data
+        for i in range(config.N + 1):
+            tmp = frames[:] + np.arange(config.N_SAMPLES*i, config.N_SAMPLES*(i+1), dtype=np.float32)
+
+            pipe.store_all(tmp)
+
+    
+        delays = np.arange(config.N_SENSORS, dtype=np.float32) / 2
+        
+        # we assume the delay difference should be uniform so we tile the delays
+        expected_diffs = np.tile(delays[:, np.newaxis], (1, config.N_SAMPLES))
+
+        # Retrieve the last frame as base
+        last_frame = pipe.get_last_frame()
+
+        # Perform a delay on the last frame
+        delayed_last_frame = pipe.delay_last_frame(delays)
+
+        # Measure the difference between the delay and the last frame
+        # Since the frame is linear incremented, it should result in uniform diff
+        diff = last_frame - delayed_last_frame
+        
+        # Since we are working with float precision, some differences must be tolerated
+        self.assertTrue(np.allclose(diff, expected_diffs, rtol=1e-05, atol=1e-08))
+
+
 
 
 
