@@ -11,13 +11,15 @@ np.set_printoptions(linewidth=120)
 
 import matplotlib.pyplot as plt
 
+from config import *
 
-ROWS = 8
-COLUMNS = 8
 
-DISTANCE = 0.02  # Distance between sensor elements
+# ROWS = 8
+# COLUMNS = 8
 
-SAMPLE_RATE = 48828.0  # Sampling rate
+# DISTANCE = 0.02  # Distance between sensor elements
+
+# SAMPLE_RATE = 48828.0  # Sampling rate
 PROPAGATION_SPEED = 340.0  # Speed of sound in air
 
 ARRAY_SEPARATION = 0  # Distance between arrays
@@ -122,6 +124,7 @@ def plot_antenna(antenna, adaptive=[], inline=False, relative=False):
     ax.scatter(a[active,2], a[active,0], a[active,1], c="red", marker="o")
     ax.scatter(a[inactive,2], a[inactive,0], a[inactive,1], c="white", marker="o", edgecolors="black", linewidths=1,)
 
+    #ax.axis('') #this line fits your images to screen 
     plt.axis("equal")
     plt.set_cmap("jet")
 
@@ -140,7 +143,7 @@ def compute_delays(antenna):
     delays = antenna[:,2] * (SAMPLE_RATE / PROPAGATION_SPEED)
     delays -= delays.min()
 
-    return delays.reshape((-1, COLUMNS, ROWS))
+    return delays.reshape((-1, ROWS, COLUMNS))
 
 
 def compute_rotation_matrix(azimuth: float, elevation: float, degrees=True):
@@ -251,14 +254,102 @@ def create_combined_array(definition: list[list[int]], position: np.ndarray[1]=O
     return place_antenna(combined_array, position)
 
 
+def generate_angles_sphere(n: int):
+    """Create n angles on a unitsphere
+
+    Args:
+        n (int): number of points to create
+
+    Returns:
+        (float, float): polar angles to each point
+    """
+    i = np.arange(0, n, dtype=np.float32) + 0.5
+    phi = np.arccos(1 - 2*i/n)
+    golden_ratio = (1 + 5**0.5)/2
+
+    theta = 2 * np.pi * i / golden_ratio
+
+    return theta, phi
+
+
+def generate_points_half_sphere(n: int):
+    """Create n points on a dome
+
+    Args:
+        n (int): number of points
+
+    Returns:
+        np.ndarray: points -> (n, 3)
+    """
+
+    theta, phi = generate_angles_sphere(2*n)
+
+    valid = (np.pi / 2) >= phi
+
+
+    theta = theta[valid]
+    phi = phi[valid]
+
+    x = np.cos(theta) * np.sin(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(phi)
+
+    points = np.vstack((x, y, z))
+
+    return points.T
+
+
+def convert_points_to_polar_angles(points: np.ndarray):
+    """Converts points to polar angles
+
+    Args:
+        points (np.ndarray): the points that will be converted
+
+    Returns:
+        (np.ndarray): polar angles -> (n, 2)
+    """
+    x = points[:,0]
+    y = points[:,1]
+    z = points[:,2]
+
+
+    r = np.sqrt(x**2 + y**2 + z**2)
+    phi = np.arccos(z / r)
+    theta = np.arctan2(y, x)
+
+    return np.vstack((theta, phi)).T
+
+
+def convert_points_to_steering_angles(points: np.ndarray):
+    """Converts points to steering angles
+
+    Args:
+        points (np.ndarray): the points that will be converted
+
+    Returns:
+        (np.ndarray): steering angles -> (n, 2)
+    """
+    x = points[:,0]
+    y = points[:,1]
+    z = points[:,2]
+
+    azimuth = np.degrees(np.arctan2(z, y)  - np.pi/2)
+    elevation = np.degrees(np.arctan2(z, x) - np.pi/2)
+
+    return np.vstack((azimuth, elevation)).T
+
+
 if __name__ == "__main__":
 
-    merged = create_combined_array([[1,1, 1]])
+    merged = create_combined_array([[1, 0, 1],
+                                    [1, 1, 1],
+                                    [1, 0, 1]])
+
     # merged = create_antenna()
     adaptive = used_sensors(merged)
     final = place_antenna(merged, np.array([0, 0, 0]))
 
-    final = steer_center(final, 89, 45)
+    final = steer_center(final, 30, 5)
 
     h = compute_delays(final)
 
