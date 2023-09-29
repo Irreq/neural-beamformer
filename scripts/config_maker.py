@@ -41,12 +41,18 @@ class ConfigBuilder(object):
         with open(self.file, "w+") as config:
             config.write(self.header())
             for key, value in json_data.items():
+                if isinstance(value, str):
+                    if value[0] == "'":
+                        output = f'"{value[1:-1]}"'
+                        config.write(self.data(key, output))
+                        continue
                 if self.is_expression(value):
                     try:
                         output = eval(eval_expression(value, json_data))
 
                     except NameError:
                         output = f'"{value}"'
+
                 else:
                     output = json.dumps(value)
 
