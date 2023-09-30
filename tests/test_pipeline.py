@@ -68,7 +68,7 @@ class Pipeline(unittest.TestCase):
 
         frames = np.zeros((config.N_SENSORS, config.N_SAMPLES), dtype=np.float32)
 
-        for i in range(config.N + 1):
+        for i in range(config.N_FRAMES + 1):
             pipe.store_all(frames[:] + np.arange(config.N_SAMPLES*i, config.N_SAMPLES*(i+1), dtype=np.float32))
 
         truth = np.zeros((config.N_SENSORS, config.BUFFER_LENGTH), dtype=np.float32)
@@ -93,7 +93,7 @@ class Pipeline(unittest.TestCase):
         frames = np.zeros((config.N_SENSORS, config.N_SAMPLES), dtype=np.float32)
 
         # Fill the pipeline with dummy data
-        for i in range(config.N + 1):
+        for i in range(config.N_FRAMES + 1):
             tmp = frames[:] + np.arange(config.N_SAMPLES*i, config.N_SAMPLES*(i+1), dtype=np.float32)
 
             pipe.store_all(tmp)
