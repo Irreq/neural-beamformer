@@ -35,6 +35,7 @@ ring_buffer *destroy_ring_buffer(ring_buffer *rb);
 void write_buffer(ring_buffer *rb, float *in);
 
 void write_buffer_single(ring_buffer *rb, float *data);
+void write_buffer_single_int32(ring_buffer *rb, int32_t *data);
 
 void read_mcpy(ring_buffer *rb, float *out);
 

@@ -8,6 +8,7 @@
 
 #include "ring_buffer.h"
 #include "config.h"
+#include "utils.h"
 
 
 #define UNROLLED 0
@@ -116,6 +117,17 @@ void write_buffer_single(ring_buffer *rb, float *data)
     }
 
 
+
+    rb->index = (rb->index + 1) & (BUFFER_LENGTH - 1);
+}
+
+#include <unistd.h>
+void write_buffer_single_int32(ring_buffer *rb, int32_t *data)
+{
+    for (int i = 0; i < N_SENSORS; i++)
+    {
+        rb->data[i][rb->index] = normalize_int32(data[i]);
+    }
 
     rb->index = (rb->index + 1) & (BUFFER_LENGTH - 1);
 }
