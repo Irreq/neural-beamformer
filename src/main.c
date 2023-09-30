@@ -42,6 +42,7 @@ typedef struct {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     int stop;
+    float result[N_SENSORS];
     float data[N_SENSORS][BUFFER_LENGTH];
 } ThreadPool;
 
@@ -85,17 +86,24 @@ void* waiting_thread(void* arg) {
     
 }
 
-void compute(int t_id, int task)
+float compute(int t_id, int task)
 {
-    printf("Worker %ld (%d) processed: ", t_id, task);
-
+    float mean = 0.0;
     for (int i = 0; i < BUFFER_LENGTH; i++)
     {
-        // printf("%f ", pool->data[task][i]);
-        printf("%d ", (int)pool->data[task][i]);
+        mean += pool->data[task][i];
     }
 
-    printf("\n");
+    return mean / BUFFER_LENGTH;
+    // printf("Worker %ld (%d) processed: ", t_id, task);
+
+    // for (int i = 0; i < BUFFER_LENGTH; i++)
+    // {
+    //     // printf("%f ", pool->data[task][i]);
+    //     printf("%d ", (int)pool->data[task][i]);
+    // }
+
+    // printf("\n");
 }
 
 
@@ -122,7 +130,9 @@ void* worker_function(void* arg) {
 
             pthread_mutex_unlock(&mutex);
 
-            compute((int)arg, task);
+            printf("%d ", task);
+
+            pool->result[task] = compute((int)arg, task);
 
         }
     }
@@ -186,8 +196,8 @@ int main() {
         for (int s = 0; s < N_SENSORS; s++)
         {
             for (int i = 0; i < N_SAMPLES; ++i) {
-                // data[i] = rand() % 100; // Replace with actual data source
-                data[s][i] += 1.0;
+                data[s][i] += rand() % 100; // Replace with actual data source
+                // data[s][i] += 1.0;
                 
             }
         }
@@ -197,19 +207,30 @@ int main() {
 
         pthread_mutex_lock(&mutex);
 
-        // write_buffer_all(rb, &data[0]);
-        write_buffer_single(rb, &data[0][0]);
+        write_buffer_all(rb, &data[0][0]);
+        // write_buffer_single(rb, &data[0][0]);
 
         read_buffer_all(rb, &pool->data[0]);
 
         pool->current_task = 0;
 
+        printf("New data: ");
+
+        for (int i = 0; i < N_SENSORS; i++)
+        {
+            printf("%f ", pool->result[i]);
+        }
+
+        printf("\n");
+
         pthread_mutex_unlock(&mutex);        
         
         // Signal worker threads to process the data
         pthread_barrier_wait(&barrier);
+
+         usleep(1000);
         
-        usleep(100000); // Simulate processing time (adjust as needed)
+        // usleep(100000); // Simulate processing time (adjust as needed)
     }
     // pthread_barrier_wait(&barrier2);
     pthread_barrier_wait(&barrier);
@@ -262,7 +283,7 @@ int main()
 
     // int i = 0;
 
-    for (int s = 0; s < N; s++)
+    for (int s = 0; s < N_FRAMES; s++)
     {
         for (int k = 0; k < N_SENSORS; k++)
         {
