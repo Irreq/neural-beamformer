@@ -22,7 +22,7 @@ from config import *
 # SAMPLE_RATE = 48828.0  # Sampling rate
 PROPAGATION_SPEED = 340.0  # Speed of sound in air
 
-ARRAY_SEPARATION = 0  # Distance between arrays
+ARRAY_SEPARATION =2* DISTANCE #0 # DISTANCE / 2  # Distance between arrays
 
 
 SKIP_N_MICS = 2  # How many mics to skip (use every SKIP_N_MICS)
@@ -127,6 +127,10 @@ def plot_antenna(antenna, adaptive=[], inline=False, relative=False):
     #ax.axis('') #this line fits your images to screen 
     plt.axis("equal")
     plt.set_cmap("jet")
+
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+    ax.set_zticklabels([])
 
     plt.show()
 
@@ -341,15 +345,13 @@ def convert_points_to_steering_angles(points: np.ndarray):
 
 if __name__ == "__main__":
 
-    merged = create_combined_array([[1, 0, 1],
-                                    [1, 1, 1],
-                                    [1, 0, 1]])
-
-    # merged = create_antenna()
-    adaptive = used_sensors(merged)
+    merged = create_combined_array([[1, 1, 1]])
     final = place_antenna(merged, np.array([0, 0, 0]))
 
-    final = steer_center(final, 30, 5)
+    # merged = create_antenna()
+    adaptive = used_sensors(final)
+    
+    final = steer_center(final, 30, 10)
 
     h = compute_delays(final)
 
