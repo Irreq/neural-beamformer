@@ -5,17 +5,19 @@ from Cython.Build import cythonize
 
 import numpy
 
+utils =  ["${CMAKE_CURRENT_SOURCE_DIR}/src/utils.c"]
+
 delay  = Extension(
     name="delay",
-    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/delay.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c", "${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c"],
-    include_dirs = ['${CMAKE_CURRENT_SOURCE_DIR}/src'],
+    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/delay.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c", "${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c"]+utils,
+    include_dirs = ['${CMAKE_CURRENT_SOURCE_DIR}/src']+[numpy.get_include()],
     language="c++",
     )
 delay.cython_c_in_temp = True 
 
 pipeline  = Extension(
     name="pipeline",
-    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/pipeline.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c"],
+    sources=["${CMAKE_CURRENT_SOURCE_DIR}/python/module/pipeline.pyx", "${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c", "${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c"]+utils,
     include_dirs = ['${CMAKE_CURRENT_SOURCE_DIR}/src']+[numpy.get_include()],
     language="c",
     )
@@ -28,8 +30,8 @@ antenna  = Extension(
     )
 
 ext_modules = [
-    pipeline,
     delay,
+    pipeline,
     antenna
 ]
 
