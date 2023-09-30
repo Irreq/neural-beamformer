@@ -165,7 +165,7 @@ int old_main()
     printf("\n");
 }
 
-int main()
+int old_delay_main()
 {
     ring_buffer *rb;
     rb = create_ring_buffer();
