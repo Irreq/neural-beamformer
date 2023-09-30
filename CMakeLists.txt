@@ -40,7 +40,8 @@ add_custom_target(config ALL DEPENDS
     
     # Python 
     COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config_maker.py ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_BINARY_DIR} --python
-               )
+    COMMAND ${PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/config_maker.py ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_SOURCE_DIR}/python --python
+)
 
 add_custom_command(OUTPUT "${PY_OUTPUT}"
                    COMMAND ${PYTHON} ${SETUP_PY} build_ext --build-lib=lib --build-temp=build
@@ -63,15 +64,42 @@ add_custom_target(cython_binds ALL DEPENDS ${PY_OUTPUT})
 #     Eigen3::Eigen
 # )
 
+# add_executable(receiver
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/receiver.c
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/receiver.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.c
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+# )
+
 add_executable(beamformer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/beamformer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/receiver.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/receiver.h
     # ${CMAKE_CURRENT_SOURCE_DIR}/src/beamformer.cpp
     # ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.h
+    
 )
 
 target_link_libraries(beamformer
     Eigen3::Eigen
+)
+
+add_executable(main
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/config.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ring_buffer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.c
 )
 
 
@@ -93,7 +121,9 @@ target_link_libraries(beamformer
 
 add_custom_target(test
     # COMMAND ${PYTHON} -m unittest discover -s ..
-    COMMAND ${PYTHON} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR} -vv
+    # COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.sh
+    COMMAND ${PYTHON} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR} -vv #--failfast
+
 )
 
 install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install)"
