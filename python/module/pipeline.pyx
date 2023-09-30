@@ -57,10 +57,14 @@ cdef class _PipeLine:
         read_buffer_all(self.rb, <float (*)[BUFFER_LENGTH]> self.frame.data)
         return self.frame
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def get_last_frame(self):
         """Retrieve the last frame as an array"""
         return self.latest()[:, -N_SAMPLES:]
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def delay_last_frame(self, np.ndarray delay_vector) -> np.ndarray:
         """Delay the latest samples for a specific amount"""
         out = np.zeros((N_SENSORS, N_SAMPLES), dtype=np.float32)
@@ -74,6 +78,7 @@ cdef class _PipeLine:
 
         return out
 
+# Expose the cython class
 class Pipeline(_PipeLine):
     def __init__(self):
         super().__init__()
