@@ -40,7 +40,7 @@ void lerp_delay(float *signal, float *out, float delay)
 
 
 
-#define SAFETY_CHECK 1
+#define SAFETY_CHECK 0
 
 int naive_delay(ring_buffer *rb, float *out, float delay, int sensor_id)
 {
