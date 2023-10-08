@@ -9,14 +9,13 @@ extern "C" {
 #include <stdbool.h>
 #include "ring_buffer.h"
 
-
+// TODO: This message does not look like its supposed to...
 /// @brief FPGA Protocol Version 2
 typedef struct _msg
 {
-    // int8_t b;
-    // int8_t c;
-    // int16_t d;
-    // float a[N];
+    int32_t k;
+    int32_t kk; // Why on earth are these required??
+
     u_int16_t frequency;
     int8_t n_arrays;
     int8_t protocol_ver;
@@ -25,11 +24,6 @@ typedef struct _msg
     int32_t stream[N_SENSORS];
 } msg;
 
-// typedef struct _msg
-// {
-//     int8_t b;
-//     float a[8];
-// } msg;
 
 int init_receiver();
 int receive(ring_buffer *rb);

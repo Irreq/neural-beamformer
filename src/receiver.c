@@ -53,6 +53,7 @@ int receive_header_data(int socket_desc)
     }
 
     printf("Received\n");
+    
     // int8_t n_arrays = message->n_arrays;
     // if (message->protocol_ver != FPGA_PROTOCOL_VERSION)
     // {
@@ -108,13 +109,66 @@ void stop_receiving() {
     destroy_ring_buffer(rb);
 }
 
+// Assumes little endian
+void printBits(size_t const size, void const * const ptr)
+{
+    unsigned char *b = (unsigned char*) ptr;
+    unsigned char byte;
+    int i, j;
+    
+    for (i = size-1; i >= 0; i--) {
+        for (j = 7; j >= 0; j--) {
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
+}
+
 int receive(ring_buffer *rb) {
+
+    // int32_t data[N_SENSORS + 2];
+    // if (recv(socket_desc, &data[0], sizeof(int32_t) * (N_SENSORS + 2), 0) < 0)
+    // {
+    //     printf("Couldn't receive\n");
+    //     return -1;
+    // }
+
+    // printBits(sizeof(int32_t), &data[0]);
+    // printBits(sizeof(int32_t), &data[1]);
+    // printBits(sizeof(int32_t), &data[2]);
+    // printBits(sizeof(int32_t), &data[3]);
+    // printBits(sizeof(int32_t), &data[4]);
+
+    // write_buffer_single_int32(rb, &data[2]);
+
+    // return 1;
+
+
     if (recv(socket_desc, message, sizeof(msg), 0) < 0)
     {
         printf("Couldn't receive\n");
         return -1;
     }
 
+    // printBits(sizeof(u_int16_t), &message->frequency);
+    // printBits(sizeof(int8_t), &message->n_arrays);
+    // printBits(sizeof(int8_t), &message->protocol_ver);
+
+    // printBits(sizeof(message->k), &message->k);
+    // printBits(sizeof(message->kk), &message->kk);
+
+    // printBits(sizeof(int32_t), &message->stream[0]);
+    // printBits(sizeof(int32_t), &message->stream[1]);
+    // printBits(sizeof(int32_t), &message->stream[2]);
+    // printBits(sizeof(int32_t), &message->stream[3]);
+    // printBits(sizeof(int32_t), &message->stream[4]);
+
+    printf("%d %d %d %d\n", message->frequency, message->n_arrays, message->protocol_ver, message->counter);
+    // printf("%d %d \n", message->a, message->b);
+    // printf("%d %d %d %d\n", message->frequency,  message->n_arrays,  message->protocol_ver,  message->counter);
+    // printf("%d %d\n", message->a, message->b);
+    // printf("%d %d %d\n", message->stream[0], message->stream[1], message->stream[10]);
     write_buffer_single_int32(rb, &message->stream[0]);
 
     return 1;
