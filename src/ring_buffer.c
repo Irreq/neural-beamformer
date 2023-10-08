@@ -124,9 +124,20 @@ void write_buffer_single(ring_buffer *rb, float *data)
 #include <unistd.h>
 void write_buffer_single_int32(ring_buffer *rb, int32_t *data)
 {
+    int inverted = 0;
     for (int i = 0; i < N_SENSORS; i++)
     {
-        rb->data[i][rb->index] = normalize_int32(data[i]);
+        if (i % COLUMNS == 0)
+        {
+            inverted = !inverted;
+        }
+
+        if (inverted) {
+            rb->data[i][rb->index] = normalize_int32(data[i]);
+        } else {
+            int k = COLUMNS * (1 + i / COLUMNS) - i % COLUMNS;
+            rb->data[i][rb->index] = normalize_int32(data[k]);
+        }
     }
 
     rb->index = (rb->index + 1) & (BUFFER_LENGTH - 1);
