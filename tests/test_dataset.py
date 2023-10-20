@@ -49,7 +49,7 @@ class Datataset(unittest.TestCase):
         # Add some sources
         # generator.add_source(50, 20, 5000)
 
-        generator.add_source(30, 30, 8000)
+        generator.add_source(0, 0, 9000)
 
 
         # Populate the pipeline
@@ -79,6 +79,7 @@ class Datataset(unittest.TestCase):
         p = image[:,-1]
 
         power = np.log10(p) #p**0.2 #np.log10(p) #+ 10
+        # power = p**0.2
         # power = p
         # power = p
         # power[power < 0] = 0

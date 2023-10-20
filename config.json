@@ -1,5 +1,6 @@
 {
     "PROPAGATION_SPEED": 340.0,
+    "FOV": 80.0,
     "SAMPLE_RATE": 48828.0,
     "DISTANCE": 0.02,
     "SKIP_N_MICS": 1,
@@ -12,6 +13,7 @@
     "N_THREADS": 8,
     "N_SENSORS": "ROWS * COLUMNS * N_ARRAYS",
     "N_KERNELS": "N_SENSORS",
-    "UDP_PORT": 12345,
-    "UDP_ADDRESS": "'127.0.0.1'"
+    "UDP_PORT": 21844,
+    "UDP_ADDRESS": "'192.168.1.2'",
+    "INTERFACE": "'enp14s0u1u2'"
 }

@@ -1,5 +1,71 @@
 # neural-beamformer
 
+This is an adaptation of the beamformer-pipeline for _ 
+
+## Installation
+
+Clone this project
+
+    git clone https://github.com/Irreq/neural-beamformer.git
+
+Go to the directory
+
+    cd neural-beamformer
+
+## Building
+
+Configure your settings in `config.json` values here will be converted to auto-generated config files in `src/` *do not edit any other config.\* file* since they will be overwritten on next build.
+
+Create the required build directory
+
+    mkdir build
+
+Change directory to `build/`
+
+    cd build
+
+Create the Makefile
+
+    cmake ..
+
+Build the program
+
+    make
+
+## Usage (inside build)
+
+Run the tests 
+
+    make test
+
+Run the program
+
+    ./beamformer
+
+<!-- Start the `tftp` server see:  -->
+
+
+
+To use the delay functions, one must compile the code. If AVX instructions are available
+the user can use `simd_delay` instead of `naive_delay` which is oftentimes
+100x faster than python3 `numpy.convolve()`.
+
+Compile using `make`
+
+    make
+
+A shared object has now been created inside `lib/` known as `libdelay.so` which can be used to delay signals.
+
+tcpdump tcpreplay wireshark-qt
+
+sudo tcpdump -i enp14s0u1u2 -G 1 -W 1 -w captured_packets.pcap -s 0 udp port 21844
+
+sudo tcpreplay -i lo -t -K --loop 1 captured_packets.pcap
+
+
+
+sudo tcpdump -i enp14s0u1u2 -G 2 -W 1 -w captured_packets.pcap -s 0 udp port 21844
+
 A CNN based beamformer.
 
 The program contains methods for generating, transforming and rotate theoretical antennas in 3D space. A simple framework

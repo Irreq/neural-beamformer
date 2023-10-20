@@ -1,3 +1,6 @@
+# cython: language_level=3
+# distutils: language=c++
+
 include "config.pxd"
 
 # from libcpp.vector cimport vector

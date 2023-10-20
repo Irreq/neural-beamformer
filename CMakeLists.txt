@@ -85,6 +85,8 @@ add_executable(beamformer
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/delay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hmi.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hmi.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/antenna.h
     

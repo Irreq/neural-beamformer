@@ -20,7 +20,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
 # Actual transmission protocol see receiver.h
-TEST_FREQUENCY = 100 #48828 # uint16
+TEST_FREQUENCY = 48828 # uint16
 TEST_N_ARRAYS = 4 #int8
 TEST_PROTOCOL_VERSION = 1 #int8
 TEST_COUNTER = 0 #int32
@@ -42,7 +42,8 @@ def generate_data():
         yield np.arange(pos*N_SENSORS, (pos+1)*N_SENSORS, dtype=np.float32) 
         pos += 1
 
-def sine_stream_generator(source: float = TEST_FREQUENCY / 10, amplitude=1.0):
+# def sine_stream_generator(source: float = TEST_FREQUENCY / 10, amplitude=1.0):
+def sine_stream_generator(source, amplitude=1.0):
     t = 0
     while True:
         sine = np.sin(2 * np.pi * source * t) * amplitude
@@ -52,17 +53,23 @@ def sine_stream_generator(source: float = TEST_FREQUENCY / 10, amplitude=1.0):
         yield np.ones(N_SENSORS, dtype=PAYLOAD_DTYPE) * denormalize_int32(sine)
         t += 1 / TEST_FREQUENCY
 
-generator = sine_stream_generator()
+generator = sine_stream_generator(8000)
 counter = 0
+
+last = time.time()
+step = 1 / TEST_FREQUENCY
+
+# Pack the int8 and the float array into separate binary representations
+header = struct.pack('iiHbb',
+                        0, 0,
+                        TEST_FREQUENCY,
+                        TEST_N_ARRAYS,
+                        TEST_PROTOCOL_VERSION
+                        )
 
 while True:
     try:
-        # Pack the int8 and the float array into separate binary representations
-        header = struct.pack('Hbbi',
-                             TEST_FREQUENCY,
-                             TEST_N_ARRAYS,
-                             TEST_PROTOCOL_VERSION,
-                             counter)
+        
 
         data = next(generator)
         
@@ -70,17 +77,25 @@ while True:
         payload = data.astype(PAYLOAD_DTYPE).tobytes(order='C')
 
         # Combine the binary data into a single message
-        msg = header + payload
+        msg = header + struct.pack("i", counter) +  payload
 
         # Send the data to the server
         sock.sendto(msg, server_address)
 
-        # Wait for 1 second before sending the next array
-        time.sleep(1 / TEST_FREQUENCY)
+        t = time.time() - last
+        # print(t, step)
+        if t < step:
+            time.sleep(step - t)
+            pass
+        last = time.time()
+
+        # # Wait for 1 second before sending the next array
+        # time.sleep(1 / TEST_FREQUENCY)
 
         counter += 1
 
-    except:
+    except Exception as e:
+        print(e)
         break
 
 # Close the socket (this part is never reached in this example)

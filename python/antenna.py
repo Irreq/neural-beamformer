@@ -345,6 +345,20 @@ def convert_points_to_steering_angles(points: np.ndarray):
 
 if __name__ == "__main__":
 
+    points = generate_points_half_sphere(50*50)
+
+    # points.append([0, 0, 1.1])
+
+    p = np.array([0, 0, 1.03])
+
+    points = np.vstack((points, p))
+
+
+
+    plot_antenna(points, relative=True)
+
+    exit()
+
     merged = create_combined_array([[1, 1, 1]])
     final = place_antenna(merged, np.array([0, 0, 0]))
 

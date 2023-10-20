@@ -80,6 +80,8 @@ int naive_delay(ring_buffer *rb, float *out, float delay, int sensor_id)
 
         out[i] += signal[current] + fraction * (signal[prev] - signal[current]);
     }
+
+    return 0;
 }
 
 inline int delay(ring_buffer *rb, float *out, float delay, int sensor_id)
@@ -122,8 +124,12 @@ inline int delay(ring_buffer *rb, float *out, float delay, int sensor_id)
         out[i] += signal[current] + fraction * (signal[current] - signal[next]);
     }
 
+    return 0;
+
 }
 
+
+#if 0
 
 int old_main()
 {
@@ -224,3 +230,5 @@ int old_delay_main()
 
 //     return 0;
 // }
+
+#endif
